@@ -1,0 +1,55 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: shelfsync
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/shelfsync?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${MYSQL_USER:shelfsync}
+    password: ${MYSQL_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+shelfsync:
+  security:
+    # Single-user API key expected in the X-Api-Key header. Leave empty to disable auth (local only).
+    api-key: ${SHELFSYNC_API_KEY:}
+  aws:
+    region: ${AWS_REGION:us-east-1}
+    # Set to http://localhost:4566 to use LocalStack.
+    endpoint-override: ${AWS_ENDPOINT_OVERRIDE:}
+  dynamodb:
+    inventory-table: ${INVENTORY_TABLE:shelfsync-inventory}
+  s3:
+    invoice-bucket: ${INVOICE_BUCKET:shelfsync-invoices}
+    presign-ttl: ${INVOICE_URL_TTL:PT15M}
+  billing:
+    currency: ${BILLING_CURRENCY:USD}
+    tax-rate: ${BILLING_TAX_RATE:0.08}
+    seller-name: ${SELLER_NAME:ShelfSync Store}
+    seller-address: ${SELLER_ADDRESS:}
+  invoice:
+    # "lambda" invokes the deployed function, "local" renders in-process and uploads to S3.
+    generator: ${INVOICE_GENERATOR:lambda}
+    lambda-function: ${INVOICE_LAMBDA_FUNCTION:shelfsync-invoice-generator}
+    retry-interval: ${INVOICE_RETRY_INTERVAL:PT5M}
+    max-attempts: ${INVOICE_MAX_ATTEMPTS:5}

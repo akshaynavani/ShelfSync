@@ -1,0 +1,16 @@
+# Profile for running against docker-compose (MySQL + LocalStack).
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/shelfsync?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: shelfsync
+    password: ${MYSQL_PASSWORD:shelfsync}
+
+shelfsync:
+  aws:
+    endpoint-override: ${AWS_ENDPOINT_OVERRIDE:http://localhost:4566}
+  invoice:
+    generator: ${INVOICE_GENERATOR:local}
+
+logging:
+  level:
+    com.shelfsync: DEBUG
