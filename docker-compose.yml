@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: shelfsync-mysql
+    environment:
+      MYSQL_DATABASE: shelfsync
+      MYSQL_USER: shelfsync
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-shelfsync}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpw}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  localstack:
+    image: localstack/localstack:3.8
+    container_name: shelfsync-localstack
+    environment:
+      SERVICES: dynamodb,s3,lambda
+      AWS_DEFAULT_REGION: us-east-1
+      INVENTORY_TABLE: shelfsync-inventory
+      INVOICE_BUCKET: shelfsync-invoices
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./infra/localstack/init.sh:/etc/localstack/init/ready.d/init.sh:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  api:
+    build:
+      context: .
+      dockerfile: shelfsync-api/Dockerfile
+    profiles: ["app"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      localstack:
+        condition: service_started
+    environment:
+      MYSQL_URL: jdbc:mysql://mysql:3306/shelfsync?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      MYSQL_USER: shelfsync
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-shelfsync}
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_ENDPOINT_OVERRIDE: http://localstack:4566
+      INVOICE_GENERATOR: ${INVOICE_GENERATOR:-local}
+      SHELFSYNC_API_KEY: ${SHELFSYNC_API_KEY:-}
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql-data:
