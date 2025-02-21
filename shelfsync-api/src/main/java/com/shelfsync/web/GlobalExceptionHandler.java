@@ -11,8 +11,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -28,13 +30,14 @@ public class GlobalExceptionHandler {
         return respond(HttpStatus.NOT_FOUND, ex.getMessage(), req);
     }
 
-    @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<ApiError> conflict(ConflictException ex, HttpServletRequest req) {
+    @ExceptionHandler({ConflictException.class, IllegalStateException.class})
+    public ResponseEntity<ApiError> conflict(RuntimeException ex, HttpServletRequest req) {
         return respond(HttpStatus.CONFLICT, ex.getMessage(), req);
     }
 
     @ExceptionHandler({IllegalArgumentException.class, HttpMessageNotReadableException.class,
-            ConstraintViolationException.class})
+            ConstraintViolationException.class, MissingServletRequestParameterException.class,
+            MethodArgumentTypeMismatchException.class})
     public ResponseEntity<ApiError> badRequest(Exception ex, HttpServletRequest req) {
         return respond(HttpStatus.BAD_REQUEST, ex.getMessage(), req);
     }
